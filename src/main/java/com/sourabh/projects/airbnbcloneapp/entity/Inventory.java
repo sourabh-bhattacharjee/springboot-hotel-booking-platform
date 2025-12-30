@@ -2,7 +2,10 @@ package com.sourabh.projects.airbnbcloneapp.entity;
 
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
@@ -18,6 +21,9 @@ import java.time.LocalDateTime;
                 columnNames = {"hotel_id","room_id","data"}
         )
 )
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
 public class Inventory {
 
     @Id
