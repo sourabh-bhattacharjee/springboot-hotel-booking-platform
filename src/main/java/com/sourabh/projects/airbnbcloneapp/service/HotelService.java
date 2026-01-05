@@ -1,6 +1,7 @@
 package com.sourabh.projects.airbnbcloneapp.service;
 
 import com.sourabh.projects.airbnbcloneapp.dto.HotelDto;
+import com.sourabh.projects.airbnbcloneapp.dto.HotelInfoDto;
 
 public interface HotelService {
 
@@ -13,4 +14,6 @@ public interface HotelService {
     void deleteHotelById(Long id);
 
     void activateHotel(Long id);
+
+    HotelInfoDto getHotelInfoById(Long hotelId);
 }

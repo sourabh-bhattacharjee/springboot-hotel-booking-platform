@@ -4,7 +4,6 @@ import com.sourabh.projects.airbnbcloneapp.entity.enums.Gender;
 import jakarta.persistence.*;
 import lombok.Data;
 
-import java.util.Set;
 
 @Data
 @Entity
