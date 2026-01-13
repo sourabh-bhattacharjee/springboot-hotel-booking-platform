@@ -1,9 +1,5 @@
 package com.sourabh.projects.airbnbcloneapp.dto;
 
-import com.sourabh.projects.airbnbcloneapp.entity.Guest;
-import com.sourabh.projects.airbnbcloneapp.entity.Hotel;
-import com.sourabh.projects.airbnbcloneapp.entity.Room;
-import com.sourabh.projects.airbnbcloneapp.entity.User;
 import com.sourabh.projects.airbnbcloneapp.entity.enums.BookingStatus;
 import lombok.Data;
 
