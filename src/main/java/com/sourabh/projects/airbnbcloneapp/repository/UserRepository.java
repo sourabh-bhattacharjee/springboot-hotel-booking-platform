@@ -1,13 +1,13 @@
 package com.sourabh.projects.airbnbcloneapp.repository;
 
-import com.sourabh.projects.airbnbcloneapp.entity.Booking;
 import com.sourabh.projects.airbnbcloneapp.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
+public interface UserRepository extends JpaRepository<User, Long> {
 
-public interface BookingRepository extends JpaRepository<Booking, Long> {
+    Optional<User> findUserById(Long id);
 
-    Boolean existsByRoomId(Long roomId);
+    Optional<User> findUserByEmail(String email);
 }
