@@ -6,13 +6,16 @@ import com.sourabh.projects.airbnbcloneapp.dto.HotelInfoDto;
 import com.sourabh.projects.airbnbcloneapp.dto.RoomDto;
 import com.sourabh.projects.airbnbcloneapp.entity.Hotel;
 import com.sourabh.projects.airbnbcloneapp.entity.Room;
+import com.sourabh.projects.airbnbcloneapp.entity.User;
 import com.sourabh.projects.airbnbcloneapp.exception.ResourceNotFoundException;
+import com.sourabh.projects.airbnbcloneapp.exception.UnAuthorisedException;
 import com.sourabh.projects.airbnbcloneapp.repository.HotelRepository;
 import com.sourabh.projects.airbnbcloneapp.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,6 +35,8 @@ public class HotelServiceImpl implements HotelService {
         log.info("Creating hotel with name: {}", hotelDto.getName());
         Hotel hotel = modelMapper.map(hotelDto, Hotel.class);
         hotel.setActive(false);
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        hotel.setOwner(user);
         hotel = hotelRepository.save(hotel);
         log.info("Creating hotel with id: {}", hotelDto.getId());
         return modelMapper.map(hotel, HotelDto.class);
@@ -44,7 +49,10 @@ public class HotelServiceImpl implements HotelService {
         Hotel hotel = hotelRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +id));
-
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())){
+            throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + id);
+        }
         return modelMapper.map(hotel, HotelDto.class);
     }
 
@@ -54,6 +62,10 @@ public class HotelServiceImpl implements HotelService {
         Hotel hotel = hotelRepository
                 .findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +id));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())){
+            throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + id);
+        }
         modelMapper.map(hotelDto, hotel);
         hotel.setId(id);
         hotel = hotelRepository.save(hotel);
@@ -68,6 +80,11 @@ public class HotelServiceImpl implements HotelService {
         Hotel hotel = hotelRepository
                 .findById(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +hotelId));
+
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())){
+            throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + hotelId);
+        }
 
         log.info("Deleted hotel with id: {}", hotelId);
         for(Room room : hotel.getRooms()){
@@ -89,6 +106,10 @@ public class HotelServiceImpl implements HotelService {
         Hotel hotel = hotelRepository
                 .findById(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +hotelId));
+        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        if(!user.equals(hotel.getOwner())){
+            throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + hotelId);
+        }
         hotel.setActive(true);
         for(Room room : hotel.getRooms()){
             inventoryService.initializeRoomForAYear(room);
@@ -97,6 +118,7 @@ public class HotelServiceImpl implements HotelService {
 
     }
 
+    //public method
     @Override
     public HotelInfoDto getHotelInfoById(Long hotelId) {
         log.info("Getting hotel info with id: {}", hotelId);
