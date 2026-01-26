@@ -8,7 +8,6 @@ import com.sourabh.projects.airbnbcloneapp.exception.ResourceNotFoundException;
 import com.sourabh.projects.airbnbcloneapp.exception.UnAuthorisedException;
 import com.sourabh.projects.airbnbcloneapp.repository.BookingRepository;
 import com.sourabh.projects.airbnbcloneapp.repository.HotelRepository;
-import com.sourabh.projects.airbnbcloneapp.repository.InventoryRepository;
 import com.sourabh.projects.airbnbcloneapp.repository.RoomRepository;
 import jakarta.transaction.Transactional;
 import lombok.Data;
@@ -73,20 +72,20 @@ public class RoomServiceImpl implements RoomService {
     }
 
     @Override
-    public RoomDto getRoomById(Long roomId) {
+    public RoomDto getRoomById(Long hotelId, Long roomId) {
         log.info("Getting room with roomId {}", roomId);
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new ResourceNotFoundException("Room not found with ID:" +roomId));
+        Room room = roomRepository.findByIdAndHotelId(roomId,hotelId).orElseThrow(() -> new ResourceNotFoundException("Room not found in this hotel:" +roomId));
         return modelMapper.map(room,RoomDto.class);
     }
 
     @Transactional
     @Override
-    public void deleteRoomById(Long roomId) {
+    public void deleteRoomById(Long hotelId, Long roomId) {
 
 
 
         log.info("Deleting room with roomId {}", roomId);
-        Room room = roomRepository.findById(roomId).orElseThrow(() -> new ResourceNotFoundException("Room not found with ID:" +roomId));
+        Room room = roomRepository.findByIdAndHotelId(roomId,hotelId).orElseThrow(() -> new ResourceNotFoundException("Room not found in this hotel" +roomId));
         User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         if(!user.equals(room.getHotel().getOwner())){
             throw new UnAuthorisedException("This user is not the owner of this room with id: " + roomId);
