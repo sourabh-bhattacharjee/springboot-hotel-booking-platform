@@ -4,11 +4,13 @@ import com.sourabh.projects.airbnbcloneapp.dto.BookingDto;
 import com.sourabh.projects.airbnbcloneapp.dto.BookingRequest;
 import com.sourabh.projects.airbnbcloneapp.dto.GuestDto;
 import com.sourabh.projects.airbnbcloneapp.service.BookingService;
+import com.stripe.exception.StripeException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,4 +29,17 @@ public class HotelBookingController {
                                                @RequestBody List<GuestDto> guestDtoList) {
         return ResponseEntity.ok(bookingService.addGuest(bookingId,guestDtoList));
     }
+
+    @PostMapping("/{bookingId}/payments")
+    public ResponseEntity<Map<String, String>> initiatePayment(@PathVariable Long bookingId) {
+        String sessionUrl = bookingService.initiatePayment(bookingId);
+        return ResponseEntity.ok(Map.of("sessionUrl",sessionUrl));
+    }
+
+    @PostMapping("/{bookingId}/cancel")
+    public ResponseEntity<Void> cancelBooking(@PathVariable Long bookingId) throws StripeException {
+        bookingService.cancelBooking(bookingId);
+        return ResponseEntity.ok().build();
+    }
+
 }
