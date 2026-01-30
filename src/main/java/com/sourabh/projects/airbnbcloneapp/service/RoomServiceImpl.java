@@ -2,13 +2,16 @@ package com.sourabh.projects.airbnbcloneapp.service;
 
 import com.sourabh.projects.airbnbcloneapp.dto.RoomDto;
 import com.sourabh.projects.airbnbcloneapp.entity.Hotel;
+import com.sourabh.projects.airbnbcloneapp.entity.Inventory;
 import com.sourabh.projects.airbnbcloneapp.entity.Room;
 import com.sourabh.projects.airbnbcloneapp.entity.User;
 import com.sourabh.projects.airbnbcloneapp.exception.ResourceNotFoundException;
 import com.sourabh.projects.airbnbcloneapp.exception.UnAuthorisedException;
 import com.sourabh.projects.airbnbcloneapp.repository.BookingRepository;
 import com.sourabh.projects.airbnbcloneapp.repository.HotelRepository;
+import com.sourabh.projects.airbnbcloneapp.repository.InventoryRepository;
 import com.sourabh.projects.airbnbcloneapp.repository.RoomRepository;
+import com.sourabh.projects.airbnbcloneapp.strategy.PricingService;
 import jakarta.transaction.Transactional;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -17,9 +20,12 @@ import org.modelmapper.ModelMapper;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static com.sourabh.projects.airbnbcloneapp.util.AppUtils.getCurrentUser;
 import static org.springframework.data.jpa.domain.AbstractPersistable_.id;
 
 @Service
@@ -33,6 +39,8 @@ public class RoomServiceImpl implements RoomService {
     private final ModelMapper modelMapper;
     private final InventoryService inventoryService;
     private final BookingRepository bookingRepository;
+    private final InventoryRepository inventoryRepository;
+    private final PricingService pricingService;
 
     @Override
     public RoomDto createNewRoom(Long hotelId, RoomDto roomDto) {
@@ -41,7 +49,7 @@ public class RoomServiceImpl implements RoomService {
                 .findById(hotelId)
                 .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +id));
 
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getCurrentUser();
         if(!user.equals(hotel.getOwner())){
             throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + hotelId);
         }
@@ -86,7 +94,7 @@ public class RoomServiceImpl implements RoomService {
 
         log.info("Deleting room with roomId {}", roomId);
         Room room = roomRepository.findByIdAndHotelId(roomId,hotelId).orElseThrow(() -> new ResourceNotFoundException("Room not found in this hotel" +roomId));
-        User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User user = getCurrentUser();
         if(!user.equals(room.getHotel().getOwner())){
             throw new UnAuthorisedException("This user is not the owner of this room with id: " + roomId);
         }
@@ -98,6 +106,43 @@ public class RoomServiceImpl implements RoomService {
         roomRepository.deleteById(roomId);
 
 
+    }
+
+    @Override
+    @Transactional
+    public RoomDto updateRoomById(Long hotelId, Long roomId, RoomDto roomDto) {
+        Hotel hotel = hotelRepository
+                .findById(hotelId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hotel not find with ID:" +hotelId));
+        User user = getCurrentUser();
+        if (user != null && !user.equals(hotel.getOwner())) {
+            throw new UnAuthorisedException("This user is not the owner of this hotel with id: " + hotelId);
+        }
+        Room room = roomRepository.findById(roomId).orElseThrow(() -> new ResourceNotFoundException("Room not found in this hotel" +roomId));
+        BigDecimal oldBasePrice = room.getBasePrice();
+        Integer oldTotalCount = room.getTotalCount();
+        modelMapper.map(roomDto, room);
+        room.setId(roomId);
+        room = roomRepository.save(room);
+
+        //if price or inventory is updated. then update the inventory for this room
+
+        if( roomDto.getBasePrice() != null && !(roomDto.getBasePrice().equals(oldBasePrice))) {
+            List<Inventory> inventoryList = inventoryRepository.findByRoom(room);
+            inventoryList.forEach(inventory -> {
+                BigDecimal dynamicPrice = pricingService.calculateDynamicPricing(inventory);
+                inventory.setPrice(dynamicPrice);
+            });
+            inventoryRepository.saveAll(inventoryList);
+        }
+
+        if(roomDto.getTotalCount() != null && !(roomDto.getTotalCount().equals(oldTotalCount))) {
+            List<Inventory> inventoryList = inventoryRepository.findByRoom(room);
+            inventoryList.forEach(inventory -> inventory.setTotalCount(roomDto.getTotalCount()));
+            inventoryRepository.saveAll(inventoryList);
+        }
+
+        return modelMapper.map(room,RoomDto.class);
     }
 
 }

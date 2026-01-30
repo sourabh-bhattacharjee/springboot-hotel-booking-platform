@@ -45,7 +45,7 @@ public class PricingUpdateService {
             if(hotelPage.isEmpty()){
                 break;
             }
-            hotelPage.getContent().forEach(hotel -> updateHotelPrices(hotel));
+            hotelPage.getContent().forEach(this::updateHotelPrices);
             page++;
         }
     }
